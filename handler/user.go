@@ -52,13 +52,6 @@ func (h *userHandler) RegisterUser(c *gin.Context) {
 }
 
 func (h *userHandler) Login(c *gin.Context) {
-	//user memasukkan input email dan password
-	//input tangkap handler
-	//mapping dari input user ke input struct
-	//input struct passing service
-	//service mencari lagi bantuan repository user
-	//mencocokan password
-
 	var input user.LoginInput
 
 	err := c.ShouldBindJSON(&input)
@@ -86,4 +79,40 @@ func (h *userHandler) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 
+}
+
+func (h *userHandler) CheckEmailAvailibility(c *gin.Context) {
+	var input user.CheckEmailInput
+
+	err := c.ShouldBindJSON(&input)
+	if err != nil {
+		errors := helper.FormatValidationError(err)
+		errorMessage := gin.H{"errors": errors}
+
+		response := helper.ApiResponse("Register account has failed", http.StatusBadRequest, "failed", errorMessage)
+		c.JSON(http.StatusBadRequest, response)
+		log.Println(response)
+		return
+	}
+
+	isEmailAvail, err := h.userService.IsEmailAvailable(input)
+	if err != nil {
+		errorMessage := gin.H{"errors": "server error"}
+		response := helper.ApiResponse("Email Check failed", http.StatusBadRequest, "failed", errorMessage)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+	data := gin.H{
+		"is_available": isEmailAvail,
+	}
+
+	metaMessage := "Email has been registered"
+
+	if isEmailAvail {
+		metaMessage = "Email is available"
+	}
+
+	response := helper.ApiResponse(metaMessage, http.StatusOK, "success", data)
+	c.JSON(http.StatusBadRequest, response)
+	return
 }
