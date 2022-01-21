@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"ginsample/helper"
 	"ginsample/user"
 	"log"
@@ -115,4 +116,54 @@ func (h *userHandler) CheckEmailAvailibility(c *gin.Context) {
 	response := helper.ApiResponse(metaMessage, http.StatusOK, "success", data)
 	c.JSON(http.StatusBadRequest, response)
 	return
+}
+
+func (h *userHandler) UploadAvatar(c *gin.Context) {
+	file, err := c.FormFile("avatar")
+
+	if err != nil {
+		data := gin.H{
+			"is_uploaded": false,
+		}
+		response := helper.ApiResponse("Failed to upload avatar", http.StatusBadRequest, "error", data)
+		c.JSON(http.StatusBadRequest, response)
+		return
+
+	}
+	//harusnya dapat dari jwt
+	userID := 1
+	path := fmt.Sprintf("images/%d-%s", userID, file.Filename)
+
+	err = c.SaveUploadedFile(file, path)
+	if err != nil {
+		data := gin.H{
+			"is_uploaded": false,
+		}
+		response := helper.ApiResponse("Failed to upload avatar", http.StatusBadRequest, "error", data)
+		c.JSON(http.StatusBadRequest, response)
+		return
+
+	}
+
+	// path = fmt.Sprintf("images/%d-%s", userID, file.Filename)
+
+	_, err = h.userService.SaveAvatar(userID, path)
+	err = c.SaveUploadedFile(file, path)
+	if err != nil {
+		data := gin.H{
+			"is_uploaded": false,
+		}
+		response := helper.ApiResponse("Failed to upload avatar", http.StatusBadRequest, "error", data)
+		c.JSON(http.StatusBadRequest, response)
+		return
+
+	}
+
+	data := gin.H{
+		"is_uploaded": true,
+	}
+	response := helper.ApiResponse("Success to upload avatar", http.StatusOK, "success", data)
+	c.JSON(http.StatusOK, response)
+	return
+
 }
