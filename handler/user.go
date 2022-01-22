@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"ginsample/auth"
 	"ginsample/helper"
 	"ginsample/user"
 	"log"
@@ -12,16 +13,14 @@ import (
 
 type userHandler struct {
 	userService user.Service
+	authService auth.Service
 }
 
-func NewUserHandler(userService user.Service) *userHandler {
-	return &userHandler{userService}
+func NewUserHandler(userService user.Service, authService auth.Service) *userHandler {
+	return &userHandler{userService, authService}
 }
 
 func (h *userHandler) RegisterUser(c *gin.Context) {
-	//tangkap input dari user
-	//map input dari user ke struct register
-	//struct di atas kita passing sebagai parameter service
 
 	var input user.RegisterUserInput
 
@@ -44,8 +43,17 @@ func (h *userHandler) RegisterUser(c *gin.Context) {
 
 	}
 
+	token, err := h.authService.GenerateToken(newUser.ID)
+
+	if err != nil {
+		response := helper.ApiResponse("Register account has failed", http.StatusBadRequest, "failed", err.Error())
+		c.JSON(http.StatusBadRequest, response)
+		return
+
+	}
+
 	// token,err := h.jwtService.GenerateToken()
-	formatter := user.FormatUser(newUser, "token1234567890")
+	formatter := user.FormatUser(newUser, token)
 
 	response := helper.ApiResponse("Account has been registered", http.StatusAccepted, "success", formatter)
 
@@ -74,7 +82,16 @@ func (h *userHandler) Login(c *gin.Context) {
 		return
 	}
 
-	formatter := user.FormatUser(loggedinUser, "tokentokentoken")
+	token, err := h.authService.GenerateToken(loggedinUser.ID)
+
+	if err != nil {
+		response := helper.ApiResponse("Register account has failed", http.StatusBadRequest, "failed", err.Error())
+		c.JSON(http.StatusBadRequest, response)
+		return
+
+	}
+
+	formatter := user.FormatUser(loggedinUser, token)
 
 	response := helper.ApiResponse("Successfully login ", http.StatusAccepted, "success", formatter)
 
